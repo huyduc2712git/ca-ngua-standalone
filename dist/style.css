@@ -53,19 +53,21 @@ body{background:radial-gradient(ellipse at 32% 30%,#966b3433,transparent 68%),li
   .header-actions .icon-button,.header-actions .text-button{width:25px!important;height:25px!important;padding:3px!important;border-radius:5px!important}
   .header-actions svg{width:14px!important;height:14px!important}
   .divider{display:none!important}
-  .workspace{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;height:calc(100dvh - 34px)!important;max-height:calc(100dvh - 34px)!important;padding:2px max(10px,env(safe-area-inset-right)) 2px max(10px,env(safe-area-inset-left))!important;gap:14px!important;max-width:100%!important;overflow:hidden!important;box-sizing:border-box!important;margin:0 auto!important}
-  .play-surface{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;height:100%!important;max-height:100%!important;flex:0 0 auto!important;width:auto!important;min-width:0!important}
+  .workspace{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;height:calc(100dvh - 34px)!important;max-height:calc(100dvh - 34px)!important;padding:2px max(14px,env(safe-area-inset-right)) 2px max(14px,env(safe-area-inset-left))!important;gap:12px!important;max-width:100%!important;width:100%!important;overflow:hidden!important;box-sizing:border-box!important;margin:0!important}
+  .play-surface{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;height:100%!important;max-height:100%!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;position:relative!important}
   .board-heading,.board-caption,.player-legend,#table-status{display:none!important}
-  .board-toolbar{margin:0 0 2px 0!important;padding:0!important;width:100%!important;display:flex!important;justify-content:space-between!important;align-items:center!important;gap:4px!important}
+  .board-toolbar{position:absolute!important;top:4px!important;left:6px!important;right:6px!important;z-index:20!important;margin:0!important;padding:0!important;pointer-events:none!important;display:flex!important;justify-content:space-between!important;align-items:center!important}
+  .board-toolbar>*{pointer-events:auto!important}
   .board-toolbar #view-hint{display:none!important}
-  .view-switch{padding:2px!important;border-radius:5px!important}
-  .view-switch button{padding:2px 7px!important;font-size:11px!important;border-radius:4px!important}
-  .camera-actions{gap:2px!important}
-  .camera-actions .icon-button{width:24px!important;height:24px!important;padding:2px!important}
+  .view-switch{padding:2px!important;border-radius:6px!important;background:#1c120bf2!important;border:1px solid #d5b67555!important;backdrop-filter:blur(8px)!important;box-shadow:0 2px 8px #0005!important}
+  .view-switch button{padding:3px 9px!important;font-size:11px!important;border-radius:4px!important}
+  .camera-actions{gap:3px!important;background:#1c120bf2!important;border:1px solid #d5b67555!important;border-radius:6px!important;padding:2px!important;backdrop-filter:blur(8px)!important;box-shadow:0 2px 8px #0005!important}
+  .camera-actions .icon-button{width:25px!important;height:25px!important;padding:2px!important;border-radius:4px!important}
   .camera-actions svg{width:13px!important;height:13px!important}
-  .board-stage{margin:0!important;padding:0!important;height:min(calc(100dvh - 38px),calc(100vw - 280px),440px)!important;width:min(calc(100dvh - 38px),calc(100vw - 280px),440px)!important;max-width:100%!important;max-height:100%!important;aspect-ratio:1!important;position:relative!important}
+  .board-stage{margin:0 auto!important;padding:0!important;height:calc(100dvh - 36px)!important;max-height:calc(100dvh - 36px)!important;width:min(calc(100vw - 280px),calc((100dvh - 36px)*1.42),560px)!important;max-width:100%!important;aspect-ratio:unset!important;position:relative!important}
   .board-plinth,.stage-3d .board-plinth{padding:0!important;margin:0!important;border:0!important;box-shadow:none!important;background:transparent!important;width:100%!important;height:100%!important}
-  .board{width:100%!important;height:100%!important;border-radius:6px!important;aspect-ratio:1!important}
+  .board{width:100%!important;height:100%!important;border-radius:6px!important}
+  .board:not(.view-3d){aspect-ratio:1!important;width:auto!important;height:100%!important;margin:0 auto!important}
   .sidebar{flex:0 0 260px!important;max-width:280px!important;min-width:220px!important;height:auto!important;max-height:calc(100dvh - 38px)!important;padding:0!important;display:flex!important;flex-direction:column!important;justify-content:center!important;overflow-y:auto!important;scrollbar-width:thin!important}
   .panel{padding:8px 12px!important;border-radius:12px!important;box-shadow:0 4px 16px rgba(0,0,0,.4)!important}
   .panel h2{font-size:15px!important;margin-bottom:3px!important;line-height:1.2!important}

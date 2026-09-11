@@ -14,7 +14,7 @@ function loadImage(src){return new Promise((resolve,reject)=>{const img=new Imag
 
 export class Board3D {
   constructor(container,{onSelect,onHover,onUnavailable,onProject}){
-    Object.assign(this,{container,onSelect,onHover,onProject,visible:true,yaw:.48,zoom:1,pieces:[],available:new Set(),pose:new Map(),buffers:[],textures:[],scene:[],destroyed:false,context:{},myId:null});
+    Object.assign(this,{container,onSelect,onHover,onProject,visible:true,yaw:.48,zoom:1.04,pieces:[],available:new Set(),pose:new Map(),buffers:[],textures:[],scene:[],destroyed:false,context:{},myId:null});
     const canvas=document.createElement('canvas');canvas.className='board-webgl';canvas.hidden=true;canvas.setAttribute('role','img');canvas.setAttribute('aria-label','Bàn cờ gỗ 3D. Kéo để xoay. Quân của bạn có vòng trắng; chạm quân có vòng vàng để đi.');this.canvas=canvas;
     const gl=canvas.getContext('webgl',{alpha:true,antialias:true,powerPreference:'low-power',premultipliedAlpha:false});if(!gl)throw new Error('WebGL không khả dụng');this.gl=gl;
     const compile=(type,source)=>{const shader=gl.createShader(type);gl.shaderSource(shader,source);gl.compileShader(shader);if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(shader));return shader;};
@@ -58,7 +58,7 @@ export class Board3D {
   setDestination(cell,color){if(!cell&&!this.target)return;this.target=cell?{cell,color}:null;this.render();}
   setVisible(value){this.visible=value;this.canvas.hidden=!value;if(value)this.resize();}
   rotate(direction){this.yaw+=direction*Math.PI/4;this.render();}
-  resetView(){const me=this.pieces.find(p=>p.playerId===this.myId);this.yaw=me?this.homeAngle(me.color):.48;this.zoom=1;this.render();}
+  resetView(){const me=this.pieces.find(p=>p.playerId===this.myId);this.yaw=me?this.homeAngle(me.color):.48;this.zoom=1.04;this.render();}
   resize(){if(this.destroyed)return;const width=this.container.clientWidth,height=this.container.clientHeight;if(!width||!height)return;const dpr=Math.min(window.devicePixelRatio||1,1.65);this.canvas.width=Math.round(width*dpr);this.canvas.height=Math.round(height*dpr);this.render();}
   draw(item){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,item.mesh.buffer);for(const [name,size,offset]of [['position',3,0],['normal',3,12],['uv',2,24]]){gl.enableVertexAttribArray(this.attributes[name]);gl.vertexAttribPointer(this.attributes[name],size,gl.FLOAT,false,32,offset);}gl.uniformMatrix4fv(this.uniforms.model,false,item.model);gl.uniform4fv(this.uniforms.color,item.color);gl.uniform1f(this.uniforms.flat,item.flat);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,item.texture);gl.drawArrays(gl.TRIANGLES,0,item.mesh.count);}
   render(){
