@@ -81,11 +81,37 @@ export class Board3D {
     const w=this.container.clientWidth,h=this.container.clientHeight;
     this.onProject?.(PEN_LABEL_CELLS.map(([x,z])=>project(this.camera,[x-7,.20,z-7],w,h).slice(0,2).map((v,i)=>v/(i?h:w)*100)));
   }
-  hitTest(clientX,clientY){const rect=this.canvas.getBoundingClientRect(),x=clientX-rect.left,y=clientY-rect.top;let nearest=null,best=Infinity;for(const p of this.pieces){if(!this.available.has(p.key))continue;const point=project(this.camera,[p.cell[0]-7,.91,p.cell[1]-7],rect.width,rect.height),distance=Math.hypot(point[0]-x,point[1]-y);if(distance<Math.max(21,rect.width*.034)&&distance<best){nearest=p;best=distance;}}return nearest;}
-  bindPointers(){const canvas=this.canvas;let start=null,moved=false;canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;start={x:e.clientX,y:e.clientY,yaw:this.yaw};moved=false;canvas.setPointerCapture(e.pointerId);});
-    canvas.addEventListener('pointermove',e=>{if(start){const dx=e.clientX-start.x,dy=e.clientY-start.y;if(Math.hypot(dx,dy)>7)moved=true;if(moved){this.yaw=start.yaw-dx*.006;this.onHover?.(null);this.render();}}else{const p=this.hitTest(e.clientX,e.clientY);canvas.style.cursor=p?'pointer':'grab';this.onHover?.(p?.piece??null);}});
-    canvas.addEventListener('pointerup',e=>{if(start&&!moved){const p=this.hitTest(e.clientX,e.clientY);if(p)this.onSelect?.(p.piece);}start=null;});canvas.addEventListener('pointercancel',()=>{start=null;});canvas.addEventListener('pointerleave',()=>{if(!start)this.onHover?.(null);});
-    canvas.addEventListener('wheel',e=>{e.preventDefault();this.zoom=Math.max(.85,Math.min(1.06,this.zoom-e.deltaY*.0008));this.render();},{passive:false});
+  hitTest(clientX,clientY){const rect=this.canvas.getBoundingClientRect(),x=clientX-rect.left,y=clientY-rect.top;let nearest=null,best=Infinity;for(const p of this.pieces){if(!this.available.has(p.key))continue;const point=project(this.camera,[p.cell[0]-7,.91,p.cell[1]-7],rect.width,rect.height),distance=Math.hypot(point[0]-x,point[1]-y);if(distance<Math.max(22,rect.width*.035*this.zoom)&&distance<best){nearest=p;best=distance;}}return nearest;}
+  bindPointers(){
+    const canvas=this.canvas,activePointers=new Map();let start=null,moved=false,pinchStart=null;
+    canvas.addEventListener('pointerdown',e=>{
+      if(e.button&&e.button!==0)return;
+      activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(activePointers.size===1){start={x:e.clientX,y:e.clientY,yaw:this.yaw};moved=false;}
+      else if(activePointers.size===2){const [p1,p2]=[...activePointers.values()];pinchStart={dist:Math.hypot(p1.x-p2.x,p1.y-p2.y),zoom:this.zoom};moved=true;}
+      try{canvas.setPointerCapture(e.pointerId);}catch{}
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(!activePointers.has(e.pointerId)){const p=this.hitTest(e.clientX,e.clientY);canvas.style.cursor=p?'pointer':'grab';this.onHover?.(p?.piece??null);return;}
+      activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(activePointers.size>=2&&pinchStart){
+        const [p1,p2]=[...activePointers.values()],dist=Math.hypot(p1.x-p2.x,p1.y-p2.y);
+        if(pinchStart.dist>10){this.zoom=Math.max(.75,Math.min(1.45,pinchStart.zoom*(dist/pinchStart.dist)));this.render();}
+      }else if(start){
+        const dx=e.clientX-start.x,dy=e.clientY-start.y;
+        if(Math.hypot(dx,dy)>7)moved=true;
+        if(moved){this.yaw=start.yaw-dx*.006;this.onHover?.(null);this.render();}
+      }
+    });
+    const pointerEnd=e=>{
+      activePointers.delete(e.pointerId);try{canvas.releasePointerCapture(e.pointerId);}catch{}
+      if(activePointers.size<2)pinchStart=null;
+      if(activePointers.size===1){const [p]=[...activePointers.values()];start={x:p.x,y:p.y,yaw:this.yaw};}
+      else if(activePointers.size===0){if(start&&!moved){const p=this.hitTest(e.clientX,e.clientY);if(p)this.onSelect?.(p.piece);}start=null;}
+    };
+    canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',pointerEnd);
+    canvas.addEventListener('pointerleave',e=>{if(!activePointers.size)this.onHover?.(null);});
+    canvas.addEventListener('wheel',e=>{e.preventDefault();this.zoom=Math.max(.75,Math.min(1.45,this.zoom-e.deltaY*.001));this.render();},{passive:false});
   }
   dispose(){this.destroyed=true;this.observer?.disconnect();for(const buffer of this.buffers)this.gl.deleteBuffer(buffer);for(const texture of this.textures)this.gl.deleteTexture(texture);this.gl.deleteProgram(this.program);this.canvas.remove();}
 }

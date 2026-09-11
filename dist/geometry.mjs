@@ -6,8 +6,7 @@ export function perspective(fov,aspect,near,far){const f=1/Math.tan(fov/2),nf=1/
 const dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],unit=a=>{const n=Math.hypot(...a)||1;return a.map(v=>v/n);};
 export function lookAt(eye,target=[0,0,0]){const z=unit(eye.map((v,i)=>v-target[i])),x=unit(cross([0,1,0],z)),y=cross(z,x);return [x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1];}
 export function project(matrix,point,width,height){const p=[...point,1],v=[0,0,0,0];for(let r=0;r<4;r++)for(let k=0;k<4;k++)v[r]+=matrix[k*4+r]*p[k];return [(v[0]/v[3]+1)*width/2,(1-v[1]/v[3])*height/2,v[2]/v[3]];}
-// Leave room for the board corners and raised horses at every rotation.
-export function boardCamera(yaw,zoom=1,aspect=1){const distance=36/Math.max(.85,Math.min(1.06,zoom))*Math.max(1,1/aspect),eye=[Math.sin(yaw)*distance*.67,distance*.8,Math.cos(yaw)*distance*.67];return {eye,matrix:multiply(perspective(.72,aspect,.1,120),lookAt(eye,[0,.05,0]))};}
+export function boardCamera(yaw,zoom=1,aspect=1){const distance=36/Math.max(.75,Math.min(1.45,zoom))*Math.max(1,1/aspect),eye=[Math.sin(yaw)*distance*.67,distance*.8,Math.cos(yaw)*distance*.67];return {eye,matrix:multiply(perspective(.72,aspect,.1,120),lookAt(eye,[0,.05,0]))};}
 const cross2=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
 export function signedArea(points){return points.reduce((s,a,i)=>{const b=points[(i+1)%points.length];return s+a[0]*b[1]-b[0]*a[1];},0)/2;}
 export function triangulate(points){
