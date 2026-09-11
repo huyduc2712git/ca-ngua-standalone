@@ -39,7 +39,7 @@ test('PWA manifest has install dimensions, standalone display and local icons',(
 test('Service worker caches a complete offline game and never intercepts room APIs or writes',async()=>{
   const handlers={},cached=[],deleted=[],root={offline:true};let claimed=false;
   const cache={addAll:async assets=>cached.push(...assets),match:async path=>path==='/'?root:null};
-  const context={URL,Promise,caches:{open:async()=>cache,keys:async()=>['ca-ngua-static-v1','unrelated-app','ca-ngua-static-v2.1.0'],delete:async key=>deleted.push(key)},fetch:async()=>{throw new Error('offline');},self:{location:{origin:'https://game.example'},addEventListener:(name,handler)=>handlers[name]=handler,clients:{claim:async()=>{claimed=true;}},skipWaiting:()=>{}}};
+  const context={URL,Promise,caches:{open:async()=>cache,keys:async()=>['ca-ngua-static-v1','unrelated-app','ca-ngua-static-v2.1.1'],delete:async key=>deleted.push(key)},fetch:async()=>{throw new Error('offline');},self:{location:{origin:'https://game.example'},addEventListener:(name,handler)=>handlers[name]=handler,clients:{claim:async()=>{claimed=true;}},skipWaiting:()=>{}}};
   vm.runInNewContext(readFileSync(new URL('../dist/sw.js',import.meta.url),'utf8'),context);
   const wait=async handler=>{let pending;handler({waitUntil:p=>pending=p});await pending;};
   await wait(handlers.install);for(const path of ['/','/app.mjs','/board3d.mjs','/horse-geometry.mjs','/engine.mjs','/board-art.mjs','/turn-status.mjs','/assets/walnut.png'])assert.ok(cached.includes(path));

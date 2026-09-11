@@ -60,13 +60,13 @@ PWA đã cài chơi chung máy offline được; nhiều máy vẫn cần tới 
 
 ## Kiểm tra sau khi deploy
 
-1. Mở `/api/health`: thấy `ok: true`, `version: "2.1.0"`; `persistence: true` nếu đã bật lưu phòng.
+1. Mở `/api/health`: thấy `ok: true`, `version: "2.1.1"`; `persistence: true` nếu đã bật lưu phòng.
 2. Hai thiết bị tạo/vào cùng phòng, sẵn sàng, bắt đầu và đi ngựa.
 3. Tải lại PWA/tab; kiểm tra ghế, vị trí, lượt hiện tại.
 4. Với disk: thử restart dịch vụ khi kiểm tra trước buổi chơi, chờ các thiết bị kết nối lại đúng ván.
 5. Cài PWA, tải xong, tắt mạng và thử chế độ **Chơi trên máy này**.
 
-Host một tệp đã chạy trong thư mục trống và phục vụ đủ 20 tài nguyên, API tạo phòng trong kiểm thử tự động. Chưa deploy thật trên tài khoản Render hoặc kiểm thử cài PWA trên điện thoại trong phiên bàn giao.
+Host một tệp đã chạy trong thư mục trống và phục vụ đủ 22 tài nguyên, API tạo phòng trong kiểm thử tự động. Chưa deploy thật trên tài khoản Render hoặc kiểm thử cài PWA trên điện thoại trong phiên bàn giao.
 
 ## Cập nhật từ mã nguồn
 
@@ -74,4 +74,8 @@ Sửa dự án standalone gốc rồi chạy `node scripts/build-host.mjs`; thay
 
 ## Giao diện 2.1
 
-Host này đã chứa bàn gỗ theo ảnh tham khảo, nhãn màu của bạn và báo lượt ngay trên bàn. Sau khi thay host, mở lại PWA khi có mạng và bấm **Cập nhật** sau khi kết thúc ván. Cache mới là `ca-ngua-static-v2.1.0`.
+Host này đã chứa bàn gỗ theo ảnh tham khảo, nhãn màu của bạn và báo lượt ngay trên bàn. Sau khi thay host, mở lại PWA khi có mạng và bấm **Cập nhật** sau khi kết thúc ván. Cache mới là `ca-ngua-static-v2.1.1`.
+
+## Dùng host với Vercel
+
+Nếu bạn dùng toàn bộ repository, làm theo `../DEPLOYMENT.md` và Blueprint `../render.yaml` tại gốc. Frontend Vercel đặt `HOST_URL` tới Render; host đặt `ALLOWED_ORIGINS` bằng URL Vercel thực tế. Chỉ cho phép từng origin chính xác, ngăn cách bằng dấu phẩy; không dùng wildcard. Mặc định không cấu hình vẫn chơi được trực tiếp trên host/LAN.

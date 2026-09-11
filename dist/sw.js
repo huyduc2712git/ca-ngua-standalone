@@ -1,5 +1,5 @@
-const CACHE='ca-ngua-static-v2.1.0';
-const ASSETS=['/','/style.css','/app.mjs','/engine.mjs','/icons.mjs','/motion.mjs','/geometry.mjs','/horse-geometry.mjs','/board3d.mjs','/board-art.mjs','/turn-status.mjs','/assets/walnut.png','/pwa.mjs','/manifest.webmanifest','/favicon.svg','/pwa/icon-192.png','/pwa/icon-512.png','/pwa/maskable-512.png','/pwa/apple-touch-icon.png'];
+const CACHE='ca-ngua-static-v2.1.1';
+const ASSETS=['/','/style.css','/app.mjs','/host-config.mjs','/network.mjs','/engine.mjs','/icons.mjs','/motion.mjs','/geometry.mjs','/horse-geometry.mjs','/board3d.mjs','/board-art.mjs','/turn-status.mjs','/assets/walnut.png','/pwa.mjs','/manifest.webmanifest','/favicon.svg','/pwa/icon-192.png','/pwa/icon-512.png','/pwa/maskable-512.png','/pwa/apple-touch-icon.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(key=>key.startsWith('ca-ngua-static-')&&key!==CACHE).map(key=>caches.delete(key)));await self.clients.claim();})());});
 self.addEventListener('message',event=>{if(event.data?.type==='ACTIVATE_UPDATE')self.skipWaiting();});

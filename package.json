@@ -1,6 +1,6 @@
 {
   "name": "ca-ngua-club",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "private": true,
   "type": "module",
   "description": "Cờ cá ngựa 3D PWA, chơi offline tại máy hoặc multiplayer qua LAN/Render.",
@@ -9,9 +9,10 @@
   },
   "scripts": {
     "start": "node server.mjs",
-    "test": "node --test tests/engine.test.mjs tests/server.test.mjs tests/pwa-motion.test.mjs tests/embedded-host.test.mjs",
+    "test": "node --test tests/engine.test.mjs tests/server.test.mjs tests/pwa-motion.test.mjs tests/embedded-host.test.mjs tests/deployment.test.mjs",
     "check": "node scripts/check.mjs",
     "build": "node scripts/check.mjs && node scripts/build-host.mjs",
-    "build:host": "node scripts/build-host.mjs"
+    "build:host": "node scripts/build-host.mjs",
+    "build:vercel": "node scripts/check.mjs && node scripts/build-vercel.mjs"
   }
 }

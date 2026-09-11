@@ -1,0 +1,17 @@
+# Free initial deployment. Add ALLOWED_ORIGINS after Vercel gives you its URL.
+services:
+  - type: web
+    name: ca-ngua-club-host
+    runtime: node
+    branch: deploy/render-vercel-v2.1
+    plan: free
+    region: singapore
+    buildCommand: node scripts/check.mjs && node scripts/build-host.mjs
+    startCommand: node render-host/host.mjs
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"

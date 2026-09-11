@@ -7,3 +7,8 @@ rooms.json.tmp
 *.log
 *.zip
 .DS_Store
+vercel-dist/
+.vercel/
+.env
+.env.*
+!.env.example

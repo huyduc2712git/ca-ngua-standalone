@@ -2,6 +2,15 @@
 
 Game cờ cá ngựa tiếng Việt cho 2–4 người: chơi nhiều máy trên cùng host hoặc thay phiên trên một máy. Giữ nguyên dạng standalone, không phụ thuộc CDN, dịch vụ bên thứ ba hay gói npm lúc chạy.
 
+## Triển khai tách Render + Vercel (2.1.1)
+
+Giữ nguyên UI 2.1; bản vá 2.1.1 thêm host Render và frontend/PWA Vercel từ cùng repository. Xem **[DEPLOYMENT.md](DEPLOYMENT.md)** để triển khai theo nhánh `deploy/render-vercel-v2.1`, không merge bản standalone gốc.
+
+- `render.yaml` tại gốc tạo host thử nghiệm Free; `vercel.json` build giao diện tĩnh vào `vercel-dist`.
+- Vercel đặt `HOST_URL` tới HTTPS của Render; Render đặt `ALLOWED_ORIGINS` bằng origin Vercel thực tế. REST/SSE có kiểm tra CORS và xác thực ghế; token khôi phục được tách theo host.
+- Build Vercel không thay `dist` của standalone. Service worker tự đổi cache khi tài nguyên hoặc host đổi; luật, bàn gỗ, màu quân, nhãn BẠN và báo lượt giữ nguyên.
+- **38/38 test thành công**. Chưa có repository hoặc deployment công khai được tạo trong phiên chuẩn bị; xem trạng thái và các bước còn lại trong DEPLOYMENT.md.
+
 ## Bản cập nhật 2.1 theo mẫu bàn gỗ
 
 - Bàn cờ chuyển sang viền gỗ walnut, ô vuông màu kem kẻ nâu và bốn chuồng sơn đậm. Mặt bàn SVG dùng chung cho 2D và texture 3D; giữ đúng tọa độ đường đua, cửa và sáu bậc chuồng.
@@ -10,7 +19,7 @@ Game cờ cá ngựa tiếng Việt cho 2–4 người: chơi nhiều máy trên
 - Nhãn tên, màu, **BẠN** và **ĐẾN LƯỢT** nằm trên đúng chuồng. Nhãn được chiếu theo camera khi xoay 3D. Quân của bạn có vòng trắng; quân đi được có vòng vàng. Chuồng đang đi có viền sáng.
 - Góc nhìn 3D ban đầu quay chuồng của bạn về phía gần; nút đặt lại góc nhìn cũng quay về phía đó. Chơi chung máy ghi rõ tên người đang tới lượt, không gán một người sở hữu toàn bộ bàn.
 - Báo lượt bằng thanh sáng và thông báo trong game; âm báo chỉ phát khi đã bật âm thanh. Không lặp báo lượt do cập nhật kết nối; không báo lượt mới khi hoạt ảnh ngựa còn đang chạy.
-- Cache PWA tăng lên **2.1.0**. Sau khi thay host, mở game khi có mạng, kết thúc ván đang chơi rồi bấm **Cập nhật** để nhận giao diện mới. Tài nguyên gỗ cũng được lưu offline.
+- Cache PWA của standalone là **2.1.1**; Vercel dùng cache theo nội dung build. Sau khi thay host, mở game khi có mạng, kết thúc ván đang chơi rồi bấm **Cập nhật** để nhận giao diện mới. Tài nguyên gỗ cũng được lưu offline.
 
 ## Những tính năng standalone giữ lại
 
@@ -157,6 +166,9 @@ Dockerfile là lựa chọn thêm; chưa chạy Docker trong phiên kiểm tra. 
 | `server.mjs`, `host-core.mjs`, `room-store.mjs` | Khởi động, HTTP/SSE và lưu phòng. |
 | `render-host/` | Host một tệp, package, hai cấu hình Render và hướng dẫn. |
 | `scripts/build-host.mjs` | Tái tạo host nhúng từ toàn bộ mã hiện tại. |
+| `scripts/build-vercel.mjs`, `vercel.json` | Build PWA tách host vào `vercel-dist`, tự đổi cache và cấu hình HTTPS. |
+| `dist/network.mjs`, `dist/host-config.mjs` | Origin của host, URL REST/SSE và khóa lưu ghế theo host. |
+| `render.yaml`, `DEPLOYMENT.md` | Blueprint từ gốc repo và hướng dẫn GitHub/Render/Vercel. |
 | `tests/`, `VALIDATION.md` | Kiểm thử và phạm vi đã xác nhận. |
 | `start.bat`, `start.sh` | Khởi động Windows và macOS/Linux. |
 
@@ -165,10 +177,10 @@ Dockerfile là lựa chọn thêm; chưa chạy Docker trong phiên kiểm tra. 
 ```sh
 node scripts/check.mjs
 node scripts/build-host.mjs
-node --test tests/engine.test.mjs tests/server.test.mjs tests/pwa-motion.test.mjs tests/embedded-host.test.mjs
+node --test tests/engine.test.mjs tests/server.test.mjs tests/pwa-motion.test.mjs tests/embedded-host.test.mjs tests/deployment.test.mjs
 ```
 
-**33/33 bài kiểm tra thành công** trên Node.js 24.19.0/Linux, gồm 12 ván mô phỏng hoàn chỉnh, HTTP/SSE nhiều phiên, startup, snapshot khôi phục, đường nhảy, hình học/camera 3D, logic cache và host một tệp trong thư mục trống. Xem `VALIDATION.md`; chưa xác nhận hình ảnh WebGL hoặc cài PWA trên điện thoại thật.
+**38/38 bài kiểm tra thành công** trên Node.js 24.19.0/Linux, gồm 12 ván mô phỏng hoàn chỉnh, HTTP/SSE nhiều phiên, startup, snapshot khôi phục, đường nhảy, hình học/camera 3D, logic cache, host một tệp và kết nối frontend/host khác origin. Xem `VALIDATION.md`; chưa xác nhận hình ảnh WebGL hoặc cài PWA trên điện thoại thật.
 
 ## Mỹ thuật và giấy phép
 

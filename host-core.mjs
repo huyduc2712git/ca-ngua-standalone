@@ -5,6 +5,7 @@ import { resolve, extname } from 'node:path';
 import { networkInterfaces } from 'node:os';
 import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { createRoomStore } from './room-store.mjs';
+import { normalizeHostOrigin } from './dist/network.mjs';
 import { createGame, rollDice, movePiece, forfeit, SEAT_ORDER, COLORS } from './dist/engine.mjs';
 
 const ROOT=fileURLToPath(new URL('./dist/',import.meta.url));
@@ -18,7 +19,8 @@ export function getLanUrls(port,inspect=networkInterfaces) {
       .map(address=>`http://${address.address}:${port}`)))];
   } catch { return []; }
 }
-export function createApp({dice=()=>randomInt(1,7),now=()=>Date.now(),assets=null,storeFile=null,trustProxy=false}={}) {
+export function createApp({dice=()=>randomInt(1,7),now=()=>Date.now(),assets=null,storeFile=null,trustProxy=false,allowedOrigins=[]}={}) {
+  const allowed=new Set(allowedOrigins.map(normalizeHostOrigin).filter(Boolean));
   const store=createRoomStore(storeFile,now),rooms=new Map(),limits=new Map();
   const persist=()=>store?.write(rooms);
   const restored=store?.read()||[];
@@ -44,11 +46,25 @@ export function createApp({dice=()=>randomInt(1,7),now=()=>Date.now(),assets=nul
     try {
       const url=new URL(req.url,'http://localhost');
       if(url.pathname.startsWith('/api/')) {
-        if(req.method==='OPTIONS')fail(405,'Chỉ truy cập từ trang của host.');
-        if(req.headers.origin&&new URL(req.headers.origin).host!==req.headers.host) fail(403,'Hãy mở game từ cùng địa chỉ host.');
+        const origin=req.headers.origin;
+        res.setHeader('Vary','Origin');
+        if(origin){
+          let normalized;
+          try{normalized=normalizeHostOrigin(origin);}catch{fail(403,'Nguồn truy cập không hợp lệ.');}
+          const protocol=(req.socket.encrypted||(trustProxy&&String(req.headers['x-forwarded-proto']||'').split(',')[0].trim()==='https'))?'https':'http';
+          if(!normalized||normalized!==origin||(normalized!==`${protocol}://${req.headers.host}`&&!allowed.has(normalized)))fail(403,'Địa chỉ game chưa được host cho phép.');
+          res.setHeader('Access-Control-Allow-Origin',origin);
+        }
+        if(req.method==='OPTIONS'){
+          if(!origin)fail(403,'Yêu cầu thiếu Origin.');
+          if(!['GET','POST'].includes(req.headers['access-control-request-method']))fail(405,'Phương thức không được hỗ trợ.');
+          const headers=String(req.headers['access-control-request-headers']||'').toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
+          if(headers.some(h=>!['content-type','x-player-token'].includes(h)))fail(403,'Header không được phép.');
+          res.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST','Access-Control-Allow-Headers':'Content-Type, X-Player-Token','Access-Control-Max-Age':'600','Vary':'Origin, Access-Control-Request-Method, Access-Control-Request-Headers','Cache-Control':'no-store'});res.end();return;
+        }
         if(req.method==='POST'&&!String(req.headers['content-type']||'').startsWith('application/json'))fail(415,'Yêu cầu phải có định dạng JSON.');
         if(req.method==='POST')checkRate(req);
-        if(url.pathname==='/api/health'&&req.method==='GET') return send(res,200,{ok:true,version:'2.1.0',persistence:!!store});
+        if(url.pathname==='/api/health'&&req.method==='GET') return send(res,200,{ok:true,version:'2.1.1',persistence:!!store});
         if(url.pathname==='/api/rooms'&&req.method==='POST') {
           if(rooms.size>=MAX_ROOMS)fail(503,'Host đã đầy phòng. Hãy thử lại sau.');
           const input=await body(req), name=nameOf(input.name), capacity=input.capacity??4;
@@ -142,7 +158,7 @@ export function createApp({dice=()=>randomInt(1,7),now=()=>Date.now(),assets=nul
 
 export function startHost(options={}) {
   const port=Number(process.env.PORT||3000),host=process.env.HOST||'0.0.0.0';
-  const {server}=createApp({...options,storeFile:process.env.ROOMS_FILE||null,trustProxy:process.env.TRUST_PROXY==='1'});
+  const {server}=createApp({...options,storeFile:process.env.ROOMS_FILE||null,trustProxy:process.env.TRUST_PROXY==='1',allowedOrigins:process.env.ALLOWED_ORIGINS?process.env.ALLOWED_ORIGINS.split(','):(options.allowedOrigins||[])});
   server.on('error',e=>{console.error(e.code==='EADDRINUSE'?`Cổng ${port} đang được sử dụng. Hãy đổi PORT.`:e.message);process.exitCode=1;});
   server.listen(port,host,()=>{
     const boundPort=server.address().port;
