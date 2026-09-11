@@ -17,7 +17,7 @@ function persistSession(value){const previous=readStore(sessionStorage,network.s
 let board3d=null,viewMode='2d',viewLoading=false,visualLock=false,motionController=null;
 let lastTurnNotice=null,turnNoticeTimer,penLabelPositions=null;
 let mode='lobby', game=null, room=null, session=null, busy=false, animating=false, connected=false;
-let lobbyTab='create', capacity=4, playerName=readStore(localStorage,'horse-name',''), toastTimer, streamController, updateQueue=Promise.resolve(), sound=readStore(localStorage,'horse-sound',false), audioContext, selectedPreview=null;
+let lobbyTab='create', capacity=4, playerName=readStore(localStorage,'horse-name',''), toastTimer, streamController, updateQueue=Promise.resolve(), sound=readStore(localStorage,'horse-sound',false), audioContext, selectedPreview=null, showLabels=readStore(localStorage,'horse-labels',true);
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function icon(name,cls=''){const nodes=ICONS[name]||ICONS['circle-help'];return `<svg class="${cls}" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${nodes.map(([tag,attrs])=>`<${tag} ${Object.entries(attrs).map(([k,v])=>`${k}="${esc(v)}"`).join(' ')}/>`).join('')}</svg>`;}
 function hydrate(root=document){root.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));}
@@ -43,16 +43,21 @@ function positionBoardLabels(positions){
   const points=viewMode==='3d'&&penLabelPositions?penLabelPositions:PEN_LABEL_CELLS.map(cell=>center(cell).map(v=>v/7.2));
   points.forEach(([x,y],i)=>{const label=$(`#board-labels [data-color="${i}"]`);if(label){label.style.left=x+'%';label.style.top=y+'%';}});
 }
+function updateLabelsState(){
+  $('#board-labels')?.classList.toggle('is-hidden',!showLabels);
+  const btn=$('#toggle-labels');
+  if(btn){btn.classList.toggle('active',showLabels);btn.setAttribute('aria-pressed',String(showLabels));btn.title=showLabels?'Ẩn nhãn trên bàn cờ':'Hiện nhãn trên bàn cờ';}
+}
 function renderSeats(){
   const status=boardStatus();let labels='';
   COLORS.forEach((c,i)=>{
     const p=game?.players.find(p=>p.color===i)??room?.members.find(p=>p.color===i),isCurrent=!!p&&status.activeId===p.id,isMe=!!p&&status.myId===p.id;
     const seat=$('#seat-'+i);seat.className=`seat-label ${isCurrent?'active':''} ${isMe?'mine':''}`;seat.style.setProperty('--team',c.color);
     seat.innerHTML=`<span class="seat-avatar">${icon('chess-knight')}</span><span class="seat-copy"><strong>${esc(p?.name??'Chưa có người')}</strong><span>${esc(c.name)}${isMe?' · BẠN':''}</span></span>${p?.forfeited?'<small>ĐÃ RỜI</small>':isCurrent?'<small>ĐẾN LƯỢT</small>':''}`;
-    labels+=`<div class="pen-label ${isMe?'mine':''} ${isCurrent?'active':''}" data-color="${i}" style="--team:${c.color}" title="${esc(p?.name??c.name)}"><span>${isMe?'BẠN · ':''}${esc(c.name)}</span>${p?`<strong>${esc(p.name)}</strong>`:''}${isCurrent?'<em>ĐẾN LƯỢT</em>':''}</div>`;
+    labels+=`<div class="pen-label ${isMe?'mine':''} ${isCurrent?'active':''}" data-color="${i}" style="--team:${c.color}" title="${esc(p?.name??c.name)}"><span class="pen-dot" style="background:${c.color}"></span><span class="pen-info"><span class="pen-tag">${isMe?'BẠN':esc(c.name)}</span>${p?`<strong class="pen-name">${esc(p.name)}</strong>`:''}</span>${isCurrent?'<em>ĐẾN LƯỢT</em>':''}</div>`;
     const pen=$('#pen-highlight-'+i);pen?.classList.toggle('active',isCurrent);pen?.classList.toggle('mine',isMe);
   });
-  $('#board-labels').innerHTML=labels;positionBoardLabels();
+  $('#board-labels').innerHTML=labels;positionBoardLabels();updateLabelsState();
 }
 function renderBoardStatus(){
   const status=boardStatus(),surface=$('#table-status');surface.hidden=!status.visible;
@@ -61,7 +66,8 @@ function renderBoardStatus(){
   const mine=status.me?COLORS[status.me.color]:null,c=status.color||COLORS[0];
   surface.dataset.tone=status.tone;surface.style.setProperty('--turn-color',c.color);
   const actionText=animating?'Đang đi…':busy?'Đang gửi…':!status.mine?'Chờ lượt':game?.phase==='move'?'Chọn ngựa':'Gieo xúc xắc';
-  surface.innerHTML=`<div class="your-team" style="--my-color:${mine?.color||c.color}"><span class="your-piece">${icon('chess-knight')}</span><span><small>${mine?'BẠN CẦM QUÂN':'CHƠI CHUNG MÁY'}</small><strong>${esc((mine?.name||c.name).toUpperCase())}</strong>${mine?`<span>${esc(status.me.name)}</span>`:''}</span></div><div class="turn-message"><strong>${esc(status.title)}</strong><span>${esc(status.detail)}</span></div>${game?.status==='playing'?`<button class="primary-button table-roll" id="table-roll" ${!canAct()||game.phase!=='roll'?'disabled':''}>${icon('dices')}<span>${actionText}</span></button>`:''}`;
+  const displayTitle=(game?.status==='playing'||!mine)?status.title:(room?.hostId===status.me?.id?'Phòng chờ thi đấu':'Sẵn sàng vào trận');
+  surface.innerHTML=`<div class="your-team" style="--my-color:${mine?.color||c.color}"><span class="your-piece">${icon('chess-knight')}</span><span><small>${mine?'BẠN CẦM QUÂN':'CHƠI CHUNG MÁY'}</small><strong>${esc((mine?.name||c.name).toUpperCase())}</strong>${mine?`<span>${esc(status.me.name)}</span>`:''}</span></div><div class="turn-message"><strong>${esc(displayTitle)}</strong><span>${esc(status.detail)}</span></div>${game?.status==='playing'?`<button class="primary-button table-roll" id="table-roll" ${!canAct()||game.phase!=='roll'?'disabled':''}>${icon('dices')}<span>${actionText}</span></button>`:''}`;
   if($('#table-roll'))$('#table-roll').onclick=()=>act('roll');
   if(status.noticeKey&&status.noticeKey!==lastTurnNotice){
     lastTurnNotice=status.noticeKey;surface.classList.remove('turn-start');void surface.offsetWidth;surface.classList.add('turn-start');clearTimeout(turnNoticeTimer);turnNoticeTimer=setTimeout(()=>surface.classList.remove('turn-start'),2200);
@@ -210,6 +216,8 @@ function applyViewButtons(){
 }
 hydrate();drawBoard();renderAll();registerTools();
 $('#view-3d').onclick=()=>setBoardView('3d');$('#view-2d').onclick=()=>setBoardView('2d');$('#rotate-board').onclick=()=>board3d?.rotate(-1);$('#reset-camera').onclick=()=>board3d?.resetView();
+$('#toggle-labels').onclick=()=>{showLabels=!showLabels;writeStore(localStorage,'horse-labels',showLabels);updateLabelsState();toast(showLabels?'Đã hiện nhãn bàn cờ':'Đã ẩn nhãn bàn cờ');};
+updateLabelsState();
 setupPWA({notify:toast,isPlaying:()=>game?.status==='playing'});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)motionController?.abort();else if(mode==='online'&&!connected)connectStream();});
 setBoardView(readStore(localStorage,'horse-view','3d'));

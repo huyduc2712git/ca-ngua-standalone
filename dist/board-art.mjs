@@ -4,7 +4,7 @@ import {boardPixel,boardCell} from './motion.mjs';
 // One exact playing surface shared by the SVG board and the WebGL texture.
 // The cells remain on the original 56-cell cờ cá ngựa route.
 export const BOARD_UNITS=720/44;
-export const PEN_LABEL_CELLS=PEN.map(([x,y])=>[x+2.5,y+.35]);
+export const PEN_LABEL_CELLS=[[.5,.5],[.5,13.5],[13.5,13.5],[13.5,.5]];
 export function boardMarkup(){
   const ink='#4a301e',cream='#eddbb8',gold='#edc976';
   let s=`<defs><linearGradient id="timber" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c0925b"/><stop offset=".48" stop-color="#e0bd80"/><stop offset="1" stop-color="#ad7a43"/></linearGradient>${COLORS.map(c=>`<linearGradient id="paint-${c.id}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c.color}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient>`).join('')}</defs>`;
