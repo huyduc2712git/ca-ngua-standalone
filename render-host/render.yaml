@@ -1,0 +1,23 @@
+# Stable host: paid compute + persistent disk. No service is created until you deploy this Blueprint.
+services:
+  - type: web
+    name: ca-ngua-club
+    runtime: node
+    plan: 0.5c-512mb
+    region: singapore
+    numInstances: 1
+    buildCommand: node --check host.mjs
+    startCommand: node host.mjs
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ROOMS_FILE
+        value: /var/data/rooms.json
+      - key: TRUST_PROXY
+        value: "1"
+    disk:
+      name: ca-ngua-rooms
+      mountPath: /var/data
+      sizeGB: 1

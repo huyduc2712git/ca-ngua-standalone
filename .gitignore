@@ -1,0 +1,9 @@
+node_modules/
+.data/
+.test-data-*/
+.test-host-*/
+rooms.json
+rooms.json.tmp
+*.log
+*.zip
+.DS_Store

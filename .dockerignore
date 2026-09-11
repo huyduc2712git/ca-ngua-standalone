@@ -1,0 +1,11 @@
+tests
+scripts
+*.zip
+.git
+node_modules
+README.md
+.data
+.test-data-*
+.test-host-*
+rooms.json
+rooms.json.tmp

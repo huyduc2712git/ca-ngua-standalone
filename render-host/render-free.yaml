@@ -1,0 +1,16 @@
+# Trial host only: sleeps when idle; rooms are lost on restart. No persistent disk.
+services:
+  - type: web
+    name: ca-ngua-club-trial
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: node --check host.mjs
+    startCommand: node host.mjs
+    healthCheckPath: /api/health
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"

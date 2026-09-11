@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Cá Ngựa Club",
+  "short_name": "Cá Ngựa",
+  "description": "Cờ cá ngựa 3D cùng bạn bè — phòng chơi 2–4 người và chơi chung máy offline.",
+  "lang": "vi",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#21150f",
+  "theme_color": "#21150f",
+  "orientation": "any",
+  "categories": ["games", "entertainment"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/pwa/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/pwa/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
