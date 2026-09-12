@@ -69,18 +69,20 @@ export class Board3D {
     const active=this.pieces.find(p=>p.playerId===this.context.activeId);
     if(active){const [x,z]=PEN[active.color];this.draw(this.item(this.meshes.pen,x-4.5,.151,z-4.5,'#ffe4a0',null,0,1,1));}
     for(const p of this.pieces){const pose=this.pose.get(p.key)||{x:p.cell[0],z:p.cell[1],y:0},x=pose.x-7,z=pose.z-7;
-      this.draw(this.item(this.meshes.shadow,x,.153,z,[1,1,1,1-Math.min(.7,pose.y*.5)],this.shadowTexture,0,1+pose.y*.2,1));
+      this.draw(this.item(this.meshes.shadow,x,.153,z,[1,1,1,Math.max(0,1-Math.min(.85,pose.y*.45))],this.shadowTexture,0,Math.max(.3,1+pose.y*.2),1));
       if(p.playerId===this.myId)this.draw(this.item(this.meshes.owner,x,.157,z,'#fff5da',null,0,1,1));
       if(this.available.has(p.key)||p.settled)this.draw(this.item(this.meshes.halo,x,.161,z,p.settled?'#eac370':'#ffe4a0',null,0,this.available.has(p.key)?1.12:1,1));
     }
     if(this.target){const {cell,color}=this.target;this.draw(this.item(this.meshes.target,cell[0]-7,.162,cell[1]-7,COLORS[color].deep,null,0,1,1));}
-    for(const p of this.pieces){const pose=this.pose.get(p.key)||{x:p.cell[0],z:p.cell[1],y:0},x=pose.x-7,z=pose.z-7,y=SURFACE+pose.y,c=COLORS[p.color];
-      this.draw(this.item(this.meshes.pawn,x,y,z,c.color,null,0,pose.squash||1));
-      this.draw(this.item(this.meshes.number,x+Math.sin(this.yaw)*.33,y+.20,z+Math.cos(this.yaw)*.33,'#ffffff',this.numberTextures[p.piece],this.yaw,1,1));
+    for(const p of this.pieces){const pose=this.pose.get(p.key)||{x:p.cell[0],z:p.cell[1],y:0},x=pose.x-7,z=pose.z-7,y=SURFACE+pose.y,c=COLORS[p.color],angle=pose.angle||0;
+      this.draw(this.item(this.meshes.pawn,x,y,z,c.color,null,angle,pose.squash||1));
+      const numYaw=this.yaw+angle;
+      this.draw(this.item(this.meshes.number,x+Math.sin(numYaw)*.33,y+.20,z+Math.cos(numYaw)*.33,'#ffffff',this.numberTextures[p.piece],numYaw,1,1));
     }
     const w=this.container.clientWidth,h=this.container.clientHeight;
     this.onProject?.(PEN_LABEL_CELLS.map(([x,z])=>project(this.camera,[x-7,.20,z-7],w,h).slice(0,2).map((v,i)=>v/(i?h:w)*100)));
   }
+  projectCell(cell,y=.25){const w=this.container.clientWidth,h=this.container.clientHeight;if(!w||!h||!this.camera)return null;const p=project(this.camera,[cell[0]-7,y,cell[1]-7],w,h);return [p[0]/w*100,p[1]/h*100];}
   hitTest(clientX,clientY){const rect=this.canvas.getBoundingClientRect(),x=clientX-rect.left,y=clientY-rect.top;let nearest=null,best=Infinity;for(const p of this.pieces){if(!this.available.has(p.key))continue;const point=project(this.camera,[p.cell[0]-7,.91,p.cell[1]-7],rect.width,rect.height),distance=Math.hypot(point[0]-x,point[1]-y);if(distance<Math.max(22,rect.width*.035*this.zoom)&&distance<best){nearest=p;best=distance;}}return nearest;}
   bindPointers(){
     const canvas=this.canvas,activePointers=new Map();let start=null,moved=false,pinchStart=null;

@@ -23,7 +23,93 @@ function icon(name,cls=''){const nodes=ICONS[name]||ICONS['circle-help'];return 
 function hydrate(root=document){root.querySelectorAll('[data-icon]').forEach(el=>el.innerHTML=icon(el.dataset.icon));}
 function toast(message){$('#toast').textContent=message;$('#toast').classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3500);}
 function announce(message){$('#live-status').textContent=message;}
-function playSound(kind){if(!sound)return;try{audioContext??=new (window.AudioContext||window.webkitAudioContext)();audioContext.resume();const notes=kind==='win'?[523,659,784,1047]:kind==='capture'?[440,294,220]:kind==='roll'?[330,440,590]:kind==='step'?[360]:kind==='turn'?[659,880]:[550,740];notes.forEach((frequency,i)=>{const o=audioContext.createOscillator(),g=audioContext.createGain(),t=audioContext.currentTime+i*.075;o.connect(g);g.connect(audioContext.destination);o.type='sine';o.frequency.value=frequency;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.008);g.gain.exponentialRampToValueAtTime(.001,t+.14);o.start(t);o.stop(t+.15);});}catch{}}
+function playSound(kind){
+  if(!sound)return;
+  try{
+    audioContext??=new (window.AudioContext||window.webkitAudioContext)();
+    audioContext.resume();
+    if(kind==='capture'){
+      const now=audioContext.currentTime;
+      const punch=audioContext.createOscillator(),pg=audioContext.createGain();
+      punch.type='triangle';
+      punch.frequency.setValueAtTime(190,now);
+      punch.frequency.exponentialRampToValueAtTime(36,now+0.18);
+      pg.gain.setValueAtTime(0.35,now);
+      pg.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+      punch.connect(pg);pg.connect(audioContext.destination);
+      punch.start(now);punch.stop(now+0.23);
+
+      const snap=audioContext.createOscillator(),sg=audioContext.createGain();
+      snap.type='sawtooth';
+      snap.frequency.setValueAtTime(760,now);
+      snap.frequency.exponentialRampToValueAtTime(140,now+0.11);
+      sg.gain.setValueAtTime(0.18,now);
+      sg.gain.exponentialRampToValueAtTime(0.001,now+0.13);
+      snap.connect(sg);sg.connect(audioContext.destination);
+      snap.start(now);snap.stop(now+0.14);
+
+      const whoosh=audioContext.createOscillator(),wg=audioContext.createGain();
+      whoosh.type='sine';
+      whoosh.frequency.setValueAtTime(540,now+0.04);
+      whoosh.frequency.exponentialRampToValueAtTime(120,now+0.42);
+      wg.gain.setValueAtTime(0.001,now+0.04);
+      wg.gain.linearRampToValueAtTime(0.14,now+0.12);
+      wg.gain.exponentialRampToValueAtTime(0.001,now+0.42);
+      whoosh.connect(wg);wg.connect(audioContext.destination);
+      whoosh.start(now+0.04);whoosh.stop(now+0.43);
+      return;
+    }
+    if(kind==='land'){
+      const now=audioContext.currentTime;
+      const clack=audioContext.createOscillator(),cg=audioContext.createGain();
+      clack.type='triangle';
+      clack.frequency.setValueAtTime(260,now);
+      clack.frequency.exponentialRampToValueAtTime(70,now+0.09);
+      cg.gain.setValueAtTime(0.24,now);
+      cg.gain.exponentialRampToValueAtTime(0.001,now+0.1);
+      clack.connect(cg);cg.connect(audioContext.destination);
+      clack.start(now);clack.stop(now+0.11);
+      return;
+    }
+    if(kind==='step'){
+      const now=audioContext.currentTime;
+      // Beat 1: "Lọc" (âm gõ gỗ ấm, thanh và giòn)
+      const o1=audioContext.createOscillator(), g1=audioContext.createGain();
+      o1.type='sine';
+      o1.frequency.setValueAtTime(630,now);
+      o1.frequency.exponentialRampToValueAtTime(430,now+0.035);
+      g1.gain.setValueAtTime(0.001,now);
+      g1.gain.linearRampToValueAtTime(0.13,now+0.003);
+      g1.gain.exponentialRampToValueAtTime(0.001,now+0.045);
+      o1.connect(g1);g1.connect(audioContext.destination);
+      o1.start(now);o1.stop(now+0.048);
+
+      // Beat 2: "Cọc" (âm gõ gỗ trầm, đầm và chắc tiếng cân bằng)
+      const t2=now+0.048;
+      const o2=audioContext.createOscillator(), g2=audioContext.createGain();
+      o2.type='sine';
+      o2.frequency.setValueAtTime(500,t2);
+      o2.frequency.exponentialRampToValueAtTime(320,t2+0.042);
+      g2.gain.setValueAtTime(0.001,t2);
+      g2.gain.linearRampToValueAtTime(0.14,t2+0.003);
+      g2.gain.exponentialRampToValueAtTime(0.001,t2+0.052);
+      o2.connect(g2);g2.connect(audioContext.destination);
+      o2.start(t2);o2.stop(t2+0.056);
+      return;
+    }
+    const notes=kind==='win'?[523,659,784,1047]:kind==='roll'?[330,440,590]:kind==='turn'?[659,880]:[550,740];
+    notes.forEach((frequency,i)=>{
+      const o=audioContext.createOscillator(),g=audioContext.createGain(),t=audioContext.currentTime+i*.075;
+      o.connect(g);g.connect(audioContext.destination);
+      o.type='sine';
+      o.frequency.value=frequency;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(.05,t+.008);
+      g.gain.exponentialRampToValueAtTime(.001,t+.14);
+      o.start(t);o.stop(t+.15);
+    });
+  }catch{}
+}
 function pieceSVG(color){const c=COLORS[color];return `<svg class="piece-svg" viewBox="0 0 44 48" aria-hidden="true"><defs><linearGradient id="horse-${color}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="${c.color}"/><stop offset="1" stop-color="${c.deep}"/></linearGradient></defs><ellipse cx="22" cy="41" rx="16" ry="5.8" fill="${c.deep}"/><ellipse cx="22" cy="38" rx="16" ry="5.8" fill="${c.color}" stroke="${c.pale}" stroke-width="1"/><g transform="translate(5 0) scale(1.43)" stroke="${c.deep}" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">${ICONS['chess-knight'].map(([tag,a],i)=>`<${tag} ${Object.entries(a).map(([k,v])=>`${k}="${esc(v)}"`).join(' ')} fill="${i<2?`url(#horse-${color})`:'none'}"/>`).join('')}</g></svg>`;}
 function drawBoard(){$('#board-svg').innerHTML=boardMarkup();}
 function boardStatus(){return getTurnStatus({mode,game,room,playerId:session?.playerId,connected,busy,animating});}
@@ -67,8 +153,11 @@ function renderBoardStatus(){
   surface.dataset.tone=status.tone;surface.style.setProperty('--turn-color',c.color);
   const actionText=animating?'Đang đi…':busy?'Đang gửi…':!status.mine?'Chờ lượt':game?.phase==='move'?'Chọn ngựa':'Gieo xúc xắc';
   const displayTitle=(game?.status==='playing'||!mine)?status.title:(room?.hostId===status.me?.id?'Phòng chờ thi đấu':'Sẵn sàng vào trận');
-  surface.innerHTML=`<div class="your-team" style="--my-color:${mine?.color||c.color}"><span class="your-piece">${icon('chess-knight')}</span><span><small>${mine?'BẠN CẦM QUÂN':'CHƠI CHUNG MÁY'}</small><strong>${esc((mine?.name||c.name).toUpperCase())}</strong>${mine?`<span>${esc(status.me.name)}</span>`:''}</span></div><div class="turn-message"><strong>${esc(displayTitle)}</strong><span>${esc(status.detail)}</span></div>${game?.status==='playing'?`<button class="primary-button table-roll" id="table-roll" ${!canAct()||game.phase!=='roll'?'disabled':''}>${icon('dices')}<span>${actionText}</span></button>`:''}`;
+  const last=game?.lastRoll;
+  const [d1,d2]=Array.isArray(game?.dice)?game.dice:Array.isArray(last?.value)?last.value:[Number(game?.dice||last?.value)||1,1];
+  surface.innerHTML=`<div class="your-team" style="--my-color:${mine?.color||c.color}"><span class="your-piece">${icon('chess-knight')}</span><span><small>${mine?'BẠN CẦM QUÂN':'CHƠI CHUNG MÁY'}</small><strong>${esc((mine?.name||c.name).toUpperCase())}</strong>${mine?`<span>${esc(status.me.name)}</span>`:''}</span></div><div class="turn-message"><strong>${esc(displayTitle)}</strong><span>${esc(status.detail)}</span></div>${game?.status==='playing'?`<div class="table-action-box"><div class="dice-area table-dice-area ${canAct()&&game.phase==='roll'?'can-roll':''}" id="table-dice-trigger" title="${canAct()&&game.phase==='roll'?'Bấm để gieo xúc xắc':''}">${die(d1,'die-first')} ${die(d2,'die-second')}</div><button class="primary-button table-roll" id="table-roll" ${!canAct()||game.phase!=='roll'?'disabled':''} title="Phím Space">${icon('dices')}<span>${actionText}</span></button></div>`:''}`;
   if($('#table-roll'))$('#table-roll').onclick=()=>act('roll');
+  if($('#table-dice-trigger'))$('#table-dice-trigger').onclick=()=>{if(canAct()&&game?.phase==='roll')act('roll');};
   if(status.noticeKey&&status.noticeKey!==lastTurnNotice){
     lastTurnNotice=status.noticeKey;surface.classList.remove('turn-start');void surface.offsetWidth;surface.classList.add('turn-start');clearTimeout(turnNoticeTimer);turnNoticeTimer=setTimeout(()=>surface.classList.remove('turn-start'),2200);
     const message=mode==='online'?`Đến lượt bạn — quân ${c.name.toLowerCase()}!`:`Đến lượt ${status.current.name} — quân ${c.name.toLowerCase()}.`;
@@ -115,13 +204,21 @@ function renderRoom(){
   $('#leave-room').onclick=confirmLeave;bindRemovals();
 }
 const PIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
-function die(value=1){return `<div class="die ${animating&&game?.event?.type==='roll'?'rolling':''}" role="img" aria-label="Xúc xắc ${value}">${Array.from({length:9},(_,i)=>`<i class="pip ${PIPS[value].includes(i)?'on':''}"></i>`).join('')}</div>`;}
+function die(value=1, cls=''){
+  const v=Math.max(1,Math.min(6,Number(value)||1));
+  return `<div class="die ${cls} ${animating&&game?.event?.type==='roll'?'rolling':''}" role="img" aria-label="Xúc xắc ${v}">${Array.from({length:9},(_,i)=>`<i class="pip ${PIPS[v].includes(i)?'on':''}"></i>`).join('')}</div>`;
+}
 function progressList(){return `<div class="game-player-list">${game.players.map(p=>`<div class="game-player" style="--team:${COLORS[p.color].color}"><span class="player-dot"></span><span class="game-player-name">${esc(p.name)} <small>${esc(COLORS[p.color].name)}${mode==='online'&&p.id===session?.playerId?' · BẠN':''}</small>${p.forfeited?' · Đã rời':''}</span><span class="progress-horses">${[0,1,2,3].map((_,i)=>icon('chess-knight',i<settledCount(p)?'done':'')).join('')}</span><span class="score">${settledCount(p)}/4</span></div>`).join('')}</div>`;}
 function renderGame(){
   const p=game.players[game.current],c=COLORS[p.color],myTurn=mode==='local'||p.id===session?.playerId,moves=legalMoves(game),last=game.lastRoll;
   const title=animating?'Ngựa đang di chuyển…':game.phase==='move'?(myTurn?'Chọn ngựa của bạn':`${p.name} đang chọn ngựa`):(myTurn?'Đến lượt bạn!':`Đợi ${p.name}`);
-  const help=animating?'Đang di chuyển…':game.phase==='move'?`${myTurn?'Chọn':'Đang chọn'} 1 trong ${moves.length} ngựa có thể đi.`:game.event?.type==='roll'&&game.event.noMoves?`Số ${last?.value}: không có nước đi hợp lệ.${game.players[game.current].id===last?.playerId?' Bạn được gieo tiếp.':''}`:game.event?.bonus?'Ra 1 hoặc 6, thêm lượt gieo!':'Gieo 1 hoặc 6 để ra quân.';
-  $('#control-panel').innerHTML=`<section class="panel game-panel" style="--team:${c.color}"><div class="room-strip"><span>${mode==='local'?'CHƠI CHUNG MÁY':`PHÒNG <code>${room.code}</code>`}</span><span>Lượt ${game.turn}</span></div><div class="turn-header"><span class="turn-avatar">${icon('chess-knight')}</span><div><div class="panel-tag" style="color:${c.color};margin:0 0 2px">${esc(c.title.toUpperCase())} · ${esc(p.name)}</div><h2 style="font-size:18px;margin:0">${esc(title)}</h2></div></div><div class="dice-action-box"><div class="dice-area">${die(last?.value||1)}</div><div class="dice-action-details"><button class="primary-button" id="roll-dice" ${!canAct()||game.phase!=='roll'?'disabled':''} title="Phím Space">${icon('dices')} <span>${animating?'Đang đi…':game.phase==='move'?'Chọn ngựa':!myTurn?'Chờ đến lượt':'Gieo xúc xắc'}</span></button><p class="turn-help">${esc(help)}</p></div></div>${mode==='online'&&!connected?'<p class="online-note">Đang nối lại host. Bàn cờ sẽ tự cập nhật khi kết nối trở lại.</p>':''}${progressList()}${mode==='online'&&room.hostId===session.playerId?room.members.filter(m=>!m.online&&m.id!==session.playerId).map(m=>`<p class="online-note">${esc(m.name)} mất kết nối. <button class="offline-remove" data-remove="${m.id}">Bỏ ghế sau 60 giây</button></p>`).join(''):''}<button class="leave-button" id="leave-game">${icon('log-out')} ${mode==='local'?'Kết thúc ván':'Rời ván'}</button></section>`;
+  const isTwo=Array.isArray(last?.value);
+  const d1=isTwo?last.value[0]:(Number.isInteger(last?.value)?last.value:1);
+  const d2=isTwo?last.value[1]:(Number.isInteger(last?.value)?last.value:1);
+  const sumText=isTwo?(last.isDouble?`Đôi ${d1}`:last.isOneSix?'Nhất Lục':`Tổng ${d1+d2}`):`Số ${d1}`;
+  const bonusNote=last?.isDouble?`Đôi ${d1} — Thêm lượt gieo!`:last?.isOneSix?'Nhất Lục — Thêm lượt gieo!':'Được thêm lượt gieo!';
+  const help=animating?'Đang di chuyển…':game.phase==='move'?`${myTurn?'Chọn':'Đang chọn'} 1 trong ${moves.length} ngựa có thể đi (${sumText}).`:game.event?.type==='roll'&&game.event.noMoves?`${sumText}: không có nước đi hợp lệ.${game.players[game.current].id===last?.playerId?' Bạn được gieo tiếp.':''}`:game.event?.bonus?bonusNote:'Gieo Đôi hoặc 1-6 để ra quân & thêm lượt.';
+  $('#control-panel').innerHTML=`<section class="panel game-panel" style="--team:${c.color}"><div class="room-strip"><span>${mode==='local'?'CHƠI CHUNG MÁY':`PHÒNG <code>${room.code}</code>`}</span><span>Lượt ${game.turn}</span></div><div class="turn-header"><span class="turn-avatar">${icon('chess-knight')}</span><div><div class="panel-tag" style="color:${c.color};margin:0 0 2px">${esc(c.title.toUpperCase())} · ${esc(p.name)}</div><h2 style="font-size:18px;margin:0">${esc(title)}</h2></div></div><div class="dice-action-box"><div class="dice-area">${die(d1,'die-first')} ${die(d2,'die-second')}</div><div class="dice-action-details"><button class="primary-button" id="roll-dice" ${!canAct()||game.phase!=='roll'?'disabled':''} title="Phím Space">${icon('dices')} <span>${animating?'Đang đi…':game.phase==='move'?'Chọn ngựa':!myTurn?'Chờ đến lượt':'Gieo xúc xắc'}</span></button><p class="turn-help">${esc(help)}</p></div></div>${mode==='online'&&!connected?'<p class="online-note">Đang nối lại host. Bàn cờ sẽ tự cập nhật khi kết nối trở lại.</p>':''}${progressList()}${mode==='online'&&room.hostId===session.playerId?room.members.filter(m=>!m.online&&m.id!==session.playerId).map(m=>`<p class="online-note">${esc(m.name)} mất kết nối. <button class="offline-remove" data-remove="${m.id}">Bỏ ghế sau 60 giây</button></p>`).join(''):''}<button class="leave-button" id="leave-game">${icon('log-out')} ${mode==='local'?'Kết thúc ván':'Rời ván'}</button></section>`;
   $('#roll-dice').onclick=()=>act('roll');$('#leave-game').onclick=confirmLeave;bindRemovals();
 }
 function renderWinner(){const p=game.players.find(p=>p.id===game.winner),host=mode==='local'||room.hostId===session.playerId;
@@ -138,31 +235,95 @@ function showActivity(){
   const entries=game.log?.length?game.log.map(l=>`<p class="activity-entry" style="--team:${COLORS[l.color??0].color};margin:6px 0;padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:6px;border-left:3px solid var(--team)">${esc(l.text)}</p>`).join(''):'<p class="activity-entry" style="padding:12px 0">Bàn cờ đã sẵn sàng. Chúc cả hội may mắn!</p>';
   openModal(`<div class="panel-tag">${icon('clock3')} DIỄN BIẾN GẦN ĐÂY</div><h2>Nhật ký ván cờ</h2><div class="activity-modal-list" style="max-height:60vh;overflow-y:auto;padding-right:6px;margin-top:14px">${entries}</div>`);
 }
-function showRules(){openModal(`<div class="panel-tag">${icon('book-open')} LUẬT CHƠI CÁ NGỰA</div><h2>Luật của bàn này</h2><div class="rule-chips"><span>2–4 người</span><span>4 ngựa / người</span><span>1 xúc xắc</span></div><div class="quick-summary-card" style="background:#2b1c11;border:1px solid #7c5c37;border-radius:10px;padding:12px 14px;margin:12px 0 18px"><div style="display:flex;align-items:center;gap:8px;color:#f3ca88;font-weight:700;font-size:13px;margin-bottom:8px">${icon('sparkles')} Nhớ một chút, vui thật lâu</div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px;font-size:11px">1 / 6</span><span>Ra quân & thêm lượt gieo</span></div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px">${icon('swords')}</span><span>Đáp đúng ô để đá ngựa</span></div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px">${icon('trophy')}</span><span>Về chuồng 6 · 5 · 4 · 3 để thắng</span></div></div><div class="modal-copy"><h3>01 · Ra quân & thêm lượt</h3><p>Gieo <b>1 hoặc 6</b> để xuất một ngựa vào ô mũi tên cùng màu, hoặc đi ngựa đang trên bàn. Sau đó được gieo tiếp, kể cả không có nước đi.</p><h3>02 · Đi & đá ngựa</h3><p>Đi ngược chiều kim đồng hồ, đúng số ô đã gieo. <b>Không vượt bất kỳ ngựa nào</b>. Đáp đúng ô đối phương để đá về bãi. Không chồng lên ngựa mình; không có ô miễn đá.</p><h3>03 · Về cửa chuồng</h3><p>Đi hết vòng và dừng đúng cửa chuồng cùng màu. Không đi quá cửa, không chạy vòng hai. Ngựa ở cửa vẫn bị đá.</p><h3>04 · Lên chuồng</h3><p>Từ cửa, gieo số nào vào ô chuồng đó nếu đường trống. Sau đó lên từng bậc: ở ô 2 cần gieo 3, ở ô 3 cần gieo 4… Không nhảy hoặc vượt ngựa.</p><h3>05 · Chiến thắng</h3><p>Xếp bốn ngựa lần lượt ở <b>6, 5, 4, 3</b>. Ngựa đã xếp xong được khóa. Người hoàn tất đầu tiên thắng ván.</p><h3>06 · Khi không đi được</h3><p>Tự chuyển lượt nếu không có nước hợp lệ. Bàn này không áp dụng phạt ba lần 6, thầu mạ hay sập hầm.</p><p class="sources">Bản một xúc xắc, lên chuồng theo đúng số bậc kế tiếp. Các nhóm có thể chơi biến thể khác. Tham khảo: <a href="https://vi.wikipedia.org/wiki/C%E1%BB%9D_c%C3%A1_ng%E1%BB%B1a" target="_blank" rel="noreferrer">luật cờ cá ngựa</a>.<br>Bàn cờ lấy cảm hứng từ <a href="https://chus.vn/trojan-imperial-city-seahorse-board-game/" target="_blank" rel="noreferrer">bộ cờ Trojan của Maztermind</a> và cách phân màu rõ ràng của <a href="https://ludoking.com/" target="_blank" rel="noreferrer">Ludo King</a>.</p></div>`);}
+function showRules(){openModal(`<div class="panel-tag">${icon('book-open')} LUẬT CHƠI CÁ NGỰA</div><h2>Luật của bàn này</h2><div class="rule-chips"><span>2–4 người</span><span>4 ngựa / người</span><span>2 xúc xắc</span></div><div class="quick-summary-card" style="background:#2b1c11;border:1px solid #7c5c37;border-radius:10px;padding:12px 14px;margin:12px 0 18px"><div style="display:flex;align-items:center;gap:8px;color:#f3ca88;font-weight:700;font-size:13px;margin-bottom:8px">${icon('sparkles')} Nhớ một chút, vui thật lâu</div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px;font-size:10px">Đôi / 1-6</span><span>Ra quân & thêm lượt gieo</span></div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px">${icon('swords')}</span><span>Đáp đúng ô để đá ngựa</span></div><div class="rule-row" style="margin-top:6px;color:#ecd8be;font-size:13px"><span class="rule-symbol" style="min-width:32px;height:24px">${icon('trophy')}</span><span>Về chuồng 6 · 5 · 4 · 3 để thắng</span></div></div><div class="modal-copy"><h3>01 · Ra quân & thêm lượt</h3><p>Gieo được <b>Đôi</b> (1-1, 2-2, 3-3, 4-4, 5-5, 6-6) hoặc <b>1 và 6</b> (Nhất - Lục) để xuất một ngựa vào ô mũi tên cùng màu, hoặc đi ngựa đang trên bàn theo tổng điểm. Sau đó được gieo tiếp, kể cả không có nước đi.</p><h3>02 · Đi & đá ngựa</h3><p>Đi ngược chiều kim đồng hồ, theo <b>tổng điểm của 2 xúc xắc</b>. <b>Không vượt bất kỳ ngựa nào</b>. Đáp đúng ô đối phương để đá về bãi. Không chồng lên ngựa mình; không có ô miễn đá.</p><h3>03 · Về cửa chuồng</h3><p>Đi hết vòng và dừng đúng cửa chuồng cùng màu. Không đi quá cửa, không chạy vòng hai. Ngựa ở cửa vẫn bị đá.</p><h3>04 · Lên chuồng</h3><p>Từ cửa chuồng, có thể vào ô chuồng theo giá trị từng viên xúc xắc hoặc tổng 2 viên nếu đường trống. Sau đó lên từng bậc khi xúc xắc có số bậc kế tiếp.</p><h3>05 · Chiến thắng</h3><p>Xếp bốn ngựa lần lượt ở <b>6, 5, 4, 3</b>. Ngựa đã xếp xong được khóa. Người hoàn tất đầu tiên thắng ván.</p><h3>06 · Khi không đi được</h3><p>Tự chuyển lượt nếu không có nước hợp lệ. Bàn này không áp dụng phạt ba lần 6, thầu mạ hay sập hầm.</p><p class="sources">Bản 2 xúc xắc, lên chuồng linh hoạt theo mặt xúc xắc. Tham khảo: <a href="https://vi.wikipedia.org/wiki/C%E1%BB%9D_c%C3%A1_ng%E1%BB%B1a" target="_blank" rel="noreferrer">luật cờ cá ngựa</a>.<br>Bàn cờ lấy cảm hứng từ <a href="https://chus.vn/trojan-imperial-city-seahorse-board-game/" target="_blank" rel="noreferrer">bộ cờ Trojan của Maztermind</a> và cách phân màu rõ ràng của <a href="https://ludoking.com/" target="_blank" rel="noreferrer">Ludo King</a>.</p></div>`);}
 function openLocal(){let count=4;const saved=readStore(localStorage,'horse-local',null);openModal(`<div class="panel-tag">${icon('monitor')} CHƠI CHUNG MÁY</div><h2>Cùng bàn, cùng vui.</h2><p class="modal-copy">Thay phiên gieo và chọn ngựa trên máy này.</p>${saved?.status==='playing'?'<button class="secondary-button" id="resume-local" style="margin-top:18px">Tiếp tục ván trên máy này</button>':''}<form class="local-form" id="local-form"><div class="field-title">Bao nhiêu người cùng chơi?</div><div class="count-picker" role="group" aria-label="Số người chơi">${countButtons(count)}</div><div class="local-names" id="local-names"></div><button class="primary-button" type="submit">Bắt đầu cuộc đua ${icon('arrow-right')}</button></form>`);const names={};function fields(){const seats=SEAT_ORDER.slice(0,count);$('#local-names').innerHTML=seats.map(color=>`<div><label for="local-name-${color}" style="--team:${COLORS[color].color}"><span class="player-dot"></span>${COLORS[color].title}</label><input id="local-name-${color}" data-color="${color}" maxlength="24" required value="${esc(names[color]??(color===0&&playerName?playerName:COLORS[color].title))}" aria-label="Tên người chơi ${COLORS[color].name}"></div>`).join('');$('#local-names').querySelectorAll('input').forEach(i=>i.oninput=()=>names[i.dataset.color]=i.value);}
   fields();$('#modal').querySelectorAll('[data-count]').forEach(b=>b.onclick=()=>{count=Number(b.dataset.count);$('#modal').querySelectorAll('[data-count]').forEach(o=>{o.classList.toggle('selected',Number(o.dataset.count)===count);o.setAttribute('aria-pressed',String(Number(o.dataset.count)===count));});fields();});
   $('#local-form').onsubmit=e=>{e.preventDefault();const players=[...$('#local-names').querySelectorAll('input')].map(i=>({id:`local-${i.dataset.color}`,color:Number(i.dataset.color),name:i.value.trim()||COLORS[Number(i.dataset.color)].title})).sort((a,b)=>a.color-b.color);startLocal(players);};
-  if($('#resume-local'))$('#resume-local').onclick=()=>{try{if(!saved.players?.length||saved.rules!=='vn-one-die-1.0')throw 0;mode='local';game=saved;room=null;session=null;closeModal();renderAll();}catch{toast('Không thể mở ván cũ. Hãy bắt đầu ván mới.');}};
+  if($('#resume-local'))$('#resume-local').onclick=()=>{try{if(!saved.players?.length||!['vn-one-die-1.0','vn-two-dice-1.0'].includes(saved.rules))throw 0;mode='local';game=saved;room=null;session=null;closeModal();renderAll();}catch{toast('Không thể mở ván cũ. Hãy bắt đầu ván mới.');}};
 }
 function startLocal(players){streamController?.abort();session=null;room=null;mode='local';connected=false;game=createGame(players);busy=false;animating=false;persistSession(null);writeStore(localStorage,'horse-local',game);history.replaceState(null,'',location.pathname);closeModal();renderAll();announce(`Ván bắt đầu. Đến lượt ${game.players[0].name}.`);}
-function fairDie(){const bytes=new Uint8Array(1);do{crypto.getRandomValues(bytes);}while(bytes[0]>=252);return bytes[0]%6+1;}
-async function act(type,data={}){if(busy||animating)return;if(mode==='online'&&!connected){toast('Đang nối lại host. Chờ một chút nhé.');return;}busy=true;renderAll();try{if(mode==='local'){const previous=structuredClone(game),playerId=game.players[game.current].id;if(type==='roll')rollDice(game,playerId,fairDie());else if(type==='move')movePiece(game,playerId,data.piece);else throw new Error('Thao tác không hợp lệ.');writeStore(localStorage,'horse-local',game);await transitionGame(previous,game);}else{const result=await api(`/rooms/${session.code}/action`,{...data,type,revision:room.revision,actionId:randomId()});if(result.room)await enqueueRoom(result.room);if(result.left)resetLobby();}}catch(e){toast(e.message);}finally{busy=false;renderAll();}}
+function fairDice(){const bytes=new Uint8Array(2);let d1,d2;do{crypto.getRandomValues(bytes);d1=bytes[0];}while(d1>=252);do{crypto.getRandomValues(bytes);d2=bytes[1];}while(d2>=252);return [d1%6+1,d2%6+1];}
+async function act(type,data={}){if(busy||animating)return;if(mode==='online'&&!connected){toast('Đang nối lại host. Chờ một chút nhé.');return;}busy=true;renderAll();try{if(mode==='local'){const previous=structuredClone(game),playerId=game.players[game.current].id;if(type==='roll')rollDice(game,playerId,fairDice());else if(type==='move')movePiece(game,playerId,data.piece);else throw new Error('Thao tác không hợp lệ.');writeStore(localStorage,'horse-local',game);await transitionGame(previous,game);}else{const result=await api(`/rooms/${session.code}/action`,{...data,type,revision:room.revision,actionId:randomId()});if(result.room)await enqueueRoom(result.room);if(result.left)resetLobby();}}catch(e){toast(e.message);}finally{busy=false;renderAll();}}
 function randomId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');}
 function enqueueRoom(next){updateQueue=updateQueue.catch(()=>{}).then(async()=>{if(mode!=='online'||next.code!==session?.code||next.revision<(room?.revision??0))return;const previous=game;room=next;game=next.game;await transitionGame(previous,game);renderAll();});return updateQueue;}
+function triggerBoardShake(){
+  if(reducedMotion)return;
+  const board=$('#board');if(!board)return;
+  board.classList.remove('shake-impact');
+  void board.offsetWidth;
+  board.classList.add('shake-impact');
+  setTimeout(()=>board.classList.remove('shake-impact'),500);
+}
+function getCellPercent(player,piece,progress){
+  const cell=boardCell(player,piece,progress);
+  if(viewMode==='3d'&&board3d?.projectCell){
+    const proj=board3d.projectCell(cell);
+    if(proj)return proj;
+  }
+  const [x,y]=coordinate(player,piece,progress);
+  return [x/7.2,y/7.2];
+}
+function spawnClashEffect(player,piece){
+  if(reducedMotion)return;
+  const board=$('#board');if(!board)return;
+  const [left,top]=getCellPercent(player,piece);
+  const fx=document.createElement('div');
+  fx.className='clash-burst';
+  fx.style.left=left+'%';
+  fx.style.top=top+'%';
+  fx.innerHTML=`<div class="clash-ring"></div><div class="clash-ring ring-delayed"></div><div class="clash-sparks"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="clash-icon">${icon('swords')}</div>`;
+  board.appendChild(fx);
+  setTimeout(()=>fx.remove(),750);
+}
+function spawnLandEffect(player,piece){
+  if(reducedMotion)return;
+  const board=$('#board');if(!board)return;
+  const [left,top]=getCellPercent(player,piece,-1);
+  const fx=document.createElement('div');
+  fx.className='land-burst';
+  fx.style.left=left+'%';
+  fx.style.top=top+'%';
+  fx.innerHTML=`<div class="land-ring"></div><div class="land-dust"></div>`;
+  board.appendChild(fx);
+  setTimeout(()=>fx.remove(),650);
+}
 async function animateHorse(player,piece,route,{capture=false,signal}={}){
   const moving=document.querySelector(`.horse[data-player="${player.id}"][data-piece="${piece}"]`);
-  const visual=moving?.querySelector('.horse-visual');moving?.classList.add('moving');
+  const visual=moving?.querySelector('.horse-visual');
+  moving?.classList.add('moving');
+  if(capture)moving?.classList.add('being-captured');
   for(let i=1;i<route.length;i++){
-    const duration=reducedMotion||document.hidden?0:capture?470:HOP_MS;
+    const duration=reducedMotion||document.hidden?0:capture?680:HOP_MS;
     await frameAnimation(duration,t=>{
-      const pose=hopPose(route[i-1],route[i],t,capture?1.35:.7),[x,y]=center([pose.x,pose.z]);
+      const pose=hopPose(route[i-1],route[i],t,capture?2.4:.7),[x,y]=center([pose.x,pose.z]);
+      if(capture)pose.angle=t*Math.PI*4;
       if(moving){moving.style.left=x/7.2+'%';moving.style.top=y/7.2+'%';moving.style.setProperty('--jump',String(pose.y));}
-      if(visual){const pixels=pose.y*44*$('#board').clientWidth/720;visual.style.transform=`translateY(${-pixels}px) rotate(${pose.tilt}rad) scaleY(${pose.squash})`;}
+      if(visual){
+        const pixels=pose.y*46*$('#board').clientWidth/720;
+        if(capture){
+          const spin=t*720;
+          const scale=1+Math.sin(t*Math.PI)*0.38;
+          visual.style.transform=`translateY(${-pixels}px) rotate(${spin}deg) scale(${scale})`;
+        }else{
+          visual.style.transform=`translateY(${-pixels}px) rotate(${pose.tilt}rad) scaleY(${pose.squash})`;
+        }
+      }
       board3d?.setPose(player.id,piece,pose);
     },{signal});
     if(!capture&&!document.hidden&&!signal?.aborted)playSound('step');
   }
-  moving?.classList.remove('moving');if(visual)visual.style.transform='';
+  moving?.classList.remove('moving');
+  moving?.classList.remove('being-captured');
+  if(visual)visual.style.transform='';
+  if(capture&&moving&&!reducedMotion&&!signal?.aborted){
+    try{
+      moving.animate([
+        {transform:'translate(-50%,-62%) scale(1.3,0.75)'},
+        {transform:'translate(-50%,-62%) scale(0.92,1.1)'},
+        {transform:'translate(-50%,-62%) scale(1,1)'}
+      ],{duration:260,easing:'ease-out'});
+    }catch{}
+  }
 }
 async function transitionGame(previous,next){
   const fresh=next?.event&&previous&&next.event.id!==(previous.event?.id??-1);
@@ -177,8 +338,18 @@ async function transitionGame(previous,next){
         const player=previous.players.find(p=>p.id===event.playerId);
         if(player)await animateHorse(player,event.piece,moveRoute(player,event.piece,event),{signal:motionController.signal});
         if(event.capture){
-          playSound('capture');const captured=previous.players.find(p=>p.id===event.capture.playerId);
-          if(captured)await animateHorse(captured,event.capture.piece,[boardCell(captured,event.capture.piece),boardCell(captured,event.capture.piece,-1)],{capture:true,signal:motionController.signal});
+          const captured=previous.players.find(p=>p.id===event.capture.playerId);
+          if(captured){
+            triggerBoardShake();
+            spawnClashEffect(captured,event.capture.piece);
+            playSound('capture');
+            const attackerName=player?.name||'Ngựa';
+            const defenderName=captured.name||'đối phương';
+            toast(`⚔️ ${attackerName} đã đá ngựa của ${defenderName} về chuồng!`);
+            await animateHorse(captured,event.capture.piece,[boardCell(captured,event.capture.piece),boardCell(captured,event.capture.piece,-1)],{capture:true,signal:motionController.signal});
+            playSound('land');
+            spawnLandEffect(captured,event.capture.piece);
+          }
         }
         announce(next.log[0]?.text||'Đã đi ngựa.');
       }

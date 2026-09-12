@@ -54,3 +54,94 @@ test('Seeded full games preserve occupancy and eventually reach legal victory',(
     assert.equal(g.status,'finished',`round ${round} did not finish`);assert.equal(settledCount(g.players.find(p=>p.id===g.winner)),4);
   }
 });
+
+test('Two dice: Doubles and [1, 6] allow launch and grant extra turn; non-doubles cannot launch', () => {
+  const bonusPairs = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6], [1, 6], [6, 1]];
+  for (const pair of bonusPairs) {
+    const g = setup();
+    rollDice(g, 'red', pair);
+    assert.equal(g.phase, 'move');
+    assert.equal(legalMoves(g).length, 4);
+    movePiece(g, 'red', 0);
+    assert.equal(g.players[0].pieces[0], 0);
+    assert.equal(g.current, 0, `extra turn expected for ${JSON.stringify(pair)}`);
+    assert.equal(g.phase, 'roll');
+  }
+
+  const nonBonusPairs = [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [2, 6], [3, 5]];
+  for (const pair of nonBonusPairs) {
+    const g = setup();
+    rollDice(g, 'red', pair);
+    assert.equal(g.current, 1, `turn should pass to next player for ${JSON.stringify(pair)}`);
+    assert.equal(g.phase, 'roll');
+  }
+});
+
+test('Two dice: Movement on track steps by sum of dice, respects jump blocks, and captures', () => {
+  const g = setup(), r = g.players[0], y = g.players[1];
+  r.pieces = [0, -1, -1, -1];
+  y.pieces = [35, -1, -1, -1]; // Yellow offset 28 + 35 = 63 % 56 = 7
+  // Roll [3, 4] -> sum 7
+  assert.equal(getMove(g, 'red', 0, [3, 4]).to, 7);
+  assert.equal(getMove(g, 'red', 0, [3, 4]).capture.playerId, 'yellow');
+
+  // Blocked path: a piece at 4 blocks move to 7
+  r.pieces = [0, 4, -1, -1];
+  assert.equal(getMove(g, 'red', 0, [3, 4]), null);
+
+  // Unblock and execute move
+  r.pieces = [0, -1, -1, -1];
+  rollDice(g, 'red', [3, 4]);
+  movePiece(g, 'red', 0);
+  assert.equal(r.pieces[0], 7);
+  assert.equal(y.pieces[0], -1); // Captured back to stable
+});
+
+test('Two dice: Home entry from door allows entering rank d1, d2 or sum (if <= 6)', () => {
+  const g = setup(), p = g.players[0];
+  p.pieces = [55, -1, -1, -1];
+  // Roll [2, 3]: sum is 5, d1 is 2, d2 is 3 -> best unblocked rank is 5 (cell 60)
+  assert.equal(getMove(g, 'red', 0, [2, 3]).to, 60);
+
+  // If rank 5 (cell 60) is occupied, roll [2, 3] falls back to rank 3 (cell 58)
+  p.pieces = [55, 60, -1, -1];
+  assert.equal(getMove(g, 'red', 0, [2, 3]).to, 58);
+
+  // Inside home: piece at cell 57 (rank 2). Next rank is 3.
+  // Roll [1, 2] (sum 3) or [3, 5] (d1=3) can advance to rank 3 (cell 58)
+  p.pieces = [57, -1, -1, -1];
+  assert.equal(getMove(g, 'red', 0, [1, 2]).to, 58);
+  assert.equal(getMove(g, 'red', 0, [3, 5]).to, 58);
+  assert.equal(getMove(g, 'red', 0, [4, 5]), null);
+});
+
+test('Two dice: Seeded full games reach legal victory', () => {
+  let seed = 987654321;
+  const rand = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 2 ** 32; };
+  for (let round = 0; round < 10; round++) {
+    const g = createGame(COLORS.slice(0, round % 3 + 2).map((c, i) => ({ id: c.id, name: c.name, color: i })));
+    for (let n = 0; n < 20000 && g.status === 'playing'; n++) {
+      const p = g.players[g.current];
+      if (g.phase === 'roll') {
+        const d1 = 1 + Math.floor(rand() * 6);
+        const d2 = 1 + Math.floor(rand() * 6);
+        rollDice(g, p.id, [d1, d2]);
+      } else {
+        const moves = legalMoves(g);
+        assert.ok(moves.length);
+        const weighted = moves.sort((a, b) => (b.to >= 56 ? 200 + b.to : b.capture ? 110 : b.to) - (a.to >= 56 ? 200 + a.to : a.capture ? 110 : a.to));
+        const selected = rand() < 0.8 ? weighted[0] : moves[Math.floor(rand() * moves.length)];
+        movePiece(g, p.id, selected.piece);
+      }
+      const occupied = g.players.flatMap(p => p.pieces.map(v => globalCell(p, v)).filter(v => v !== null));
+      assert.equal(new Set(occupied).size, occupied.length);
+      for (const player of g.players) {
+        const home = player.pieces.filter(v => v >= 56);
+        assert.equal(new Set(home).size, home.length);
+        assert.ok(player.pieces.every(v => Number.isInteger(v) && v >= -1 && v <= 61));
+      }
+    }
+    assert.equal(g.status, 'finished', `round ${round} did not finish`);
+    assert.equal(settledCount(g.players.find(p => p.id === g.winner)), 4);
+  }
+});

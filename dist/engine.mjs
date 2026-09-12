@@ -27,7 +27,30 @@ export const HOME = [
 ];
 export const PEN = [ [0,0], [0,9], [9,9], [9,0] ];
 export const SEAT_ORDER = [0,2,1,3];
-export const RULES = Object.freeze({ version:'vn-one-die-1.0', trackLength:56, entry:[1,6], extraTurn:[1,6], blockJumping:true, home:'exact-next', finish:[6,5,4,3] });
+export const RULES = Object.freeze({ version:'vn-two-dice-1.0', trackLength:56, entry:[1,6], extraTurn:[1,6], blockJumping:true, home:'exact-next', finish:[6,5,4,3] });
+export function normalizeDice(dice) {
+  if (Array.isArray(dice)) {
+    if (dice.length === 2 && Number.isInteger(dice[0]) && Number.isInteger(dice[1])) {
+      if (dice[0] >= 1 && dice[0] <= 6 && dice[1] >= 1 && dice[1] <= 6) return dice;
+      if (dice[0] >= 1 && dice[0] <= 6 && dice[1] === 0) return dice;
+    }
+    if (dice.length === 1 && Number.isInteger(dice[0]) && dice[0] >= 1 && dice[0] <= 6) return [dice[0], 0];
+    return null;
+  }
+  if (Number.isInteger(dice) && dice >= 1 && dice <= 6) return [dice, 0];
+  return null;
+}
+export function isBonusRoll(dice) {
+  const norm = normalizeDice(dice);
+  if (!norm) return false;
+  if (norm[1] === 0) return [1, 6].includes(norm[0]);
+  return norm[0] === norm[1] || (norm[0] === 1 && norm[1] === 6) || (norm[0] === 6 && norm[1] === 1);
+}
+export function diceSum(dice) {
+  const norm = normalizeDice(dice);
+  if (!norm) return 0;
+  return norm[0] + norm[1];
+}
 export function createGame(players) {
   if (players.length < 2 || players.length > 4 || new Set(players.map(p=>p.color)).size !== players.length) throw new Error('Cần từ 2 đến 4 người với màu khác nhau.');
   if(players.some(p=>!Number.isInteger(p.color)||p.color<0||p.color>3)||new Set(players.map(p=>p.id)).size!==players.length) throw new Error('Người chơi không hợp lệ.');
@@ -47,26 +70,77 @@ function occupant(game,cell,excludeId,excludePiece) {
   }
   return null;
 }
-export function getMove(game,playerId,piece,die=game.dice) {
-  if(game.status!=='playing'||!Number.isInteger(die)||die<1||die>6||!Number.isInteger(piece)||piece<0||piece>3) return null;
+export function getMove(game,playerId,piece,dice=game.dice) {
+  if(game.status!=='playing'||!Number.isInteger(piece)||piece<0||piece>3) return null;
   const p=game.players.find(p=>p.id===playerId);
   if(!p||p.forfeited||isSettled(p,piece)) return null;
-  const from=p.pieces[piece]; let to; const path=[];
+  const norm=normalizeDice(dice);
+  if(!norm) return null;
+  const isTwoDice=norm[1]>0, sum=norm[0]+norm[1];
+  if(sum<1) return null;
+  const from=p.pieces[piece]; let to; const path=[]; let steps=sum;
   if(from===-1) {
-    if(!RULES.entry.includes(die)) return null;
-    to=0; path.push(0);
+    if(!isBonusRoll(norm)) return null;
+    to=0; path.push(0); steps=0;
   } else if(from<55) {
-    to=from+die;
-    if(to>55) return null; // Must land at the door; no overshoot, no second lap.
-    for(let n=from+1;n<=to;n++) path.push(n);
+    if(isTwoDice) {
+      const d1=norm[0], d2=norm[1];
+      const candidates=from+sum<=55 ? [sum] : [Math.max(d1,d2), Math.min(d1,d2)];
+      let chosen=null;
+      for(const step of candidates) {
+        const targetTo=from+step;
+        if(targetTo>55) continue;
+        const testPath=[];
+        for(let n=from+1;n<=targetTo;n++) testPath.push(n);
+        let blocked=false;
+        for(const n of testPath) {
+          const hit=occupant(game,globalCell(p,n),p.id,piece);
+          if(hit) {
+            if(n!==targetTo||hit.playerId===p.id) { blocked=true; break; }
+          }
+        }
+        if(!blocked) { chosen={targetTo,testPath,steps:step}; break; }
+      }
+      if(!chosen) return null;
+      to=chosen.targetTo; steps=chosen.steps;
+      for(const n of chosen.testPath) path.push(n);
+    } else {
+      to=from+sum;
+      if(to>55) return null; // Must land at the door; no overshoot, no second lap.
+      for(let n=from+1;n<=to;n++) path.push(n);
+    }
   } else if(from===55) {
-    to=55+die;
-    if(die>6-settledCount(p)) return null;
-    for(let n=56;n<=to;n++) path.push(n);
+    if(isTwoDice) {
+      const d1=norm[0], d2=norm[1], maxHome=6-settledCount(p);
+      const options=[sum<=maxHome?sum:null, d1<=maxHome?d1:null, d2<=maxHome?d2:null]
+        .filter(v=>v!==null&&v>=1).sort((a,b)=>b-a);
+      let chosen=null;
+      for(const rank of options) {
+        const targetTo=55+rank, testPath=[];
+        for(let n=56;n<=targetTo;n++) testPath.push(n);
+        const blocked=testPath.some(n=>p.pieces.some((v,i)=>i!==piece&&v===n));
+        if(!blocked){ chosen={rank,targetTo,testPath}; break; }
+      }
+      if(!chosen) return null;
+      to=chosen.targetTo; steps=chosen.rank;
+      for(const n of chosen.testPath) path.push(n);
+    } else {
+      const die=sum;
+      to=55+die;
+      if(die>6-settledCount(p)) return null;
+      steps=die;
+      for(let n=56;n<=to;n++) path.push(n);
+    }
   } else {
     const nextHome=from-55+1;
-    if(die!==nextHome||nextHome>6-settledCount(p)) return null;
-    to=from+1; path.push(to);
+    if(nextHome>6-settledCount(p)) return null;
+    if(isTwoDice) {
+      const d1=norm[0], d2=norm[1];
+      if(d1!==nextHome && d2!==nextHome && sum!==nextHome) return null;
+    } else {
+      if(sum!==nextHome) return null;
+    }
+    to=from+1; steps=1; path.push(to);
   }
   let capture=null;
   for(const n of path) {
@@ -79,7 +153,7 @@ export function getMove(game,playerId,piece,die=game.dice) {
       }
     }
   }
-  return {playerId,piece,from,to,path,capture,kind:from===-1?'enter':to>=56?'home':capture?'capture':'move'};
+  return {playerId,piece,from,to,path,capture,steps,kind:from===-1?'enter':to>=56?'home':capture?'capture':'move'};
 }
 export function legalMoves(game) {
   if(game.status!=='playing'||game.phase!=='move') return [];
@@ -88,35 +162,46 @@ export function legalMoves(game) {
 function addLog(game,text,type='move',color=game.players[game.current]?.color) {
   game.log.unshift({id:++game.sequence,text,type,color,turn:game.turn}); game.log=game.log.slice(0,50);
 }
-function endTurn(game,die) {
-  const bonus=RULES.extraTurn.includes(die);
+function endTurn(game,dice) {
+  const bonus=isBonusRoll(dice);
   if(!bonus) { do { game.current=(game.current+1)%game.players.length; } while(game.players[game.current].forfeited); }
   game.phase='roll'; game.dice=null; game.turn++;
   return bonus;
 }
-export function rollDice(game,playerId,die) {
+export function rollDice(game,playerId,dice) {
   if(game.status!=='playing'||game.phase!=='roll'||game.players[game.current].id!==playerId) throw new Error('Chưa đến lượt gieo của bạn.');
-  if(!Number.isInteger(die)||die<1||die>6) throw new Error('Xúc xắc không hợp lệ.');
+  const norm=normalizeDice(dice);
+  if(!norm) throw new Error('Xúc xắc không hợp lệ.');
   const p=game.players[game.current];
-  game.dice=die; game.lastRoll={value:die,playerId,color:p.color}; game.phase='move';
-  addLog(game,`${p.name} gieo được ${die}.`,'roll');
+  const isTwo=norm[1]>0;
+  game.dice=isTwo?norm:norm[0];
+  const isDouble=isTwo&&norm[0]===norm[1];
+  const isOneSix=isTwo&&((norm[0]===1&&norm[1]===6)||(norm[0]===6&&norm[1]===1));
+  const bonus=isBonusRoll(norm);
+  const sum=norm[0]+norm[1];
+  game.lastRoll={value:game.dice,sum,playerId,color:p.color,isDouble,isOneSix};
+  game.phase='move';
+  const tag=isDouble?` (Đôi ${norm[0]} - Thêm lượt)`:isOneSix?' (Nhất Lục - Thêm lượt)':'';
+  const logMsg=isTwo?`${p.name} gieo được [${norm[0]}, ${norm[1]}] (Tổng ${sum})${tag}.`:`${p.name} gieo được ${norm[0]}.`;
+  addLog(game,logMsg,'roll');
   const moves=legalMoves(game);
-  game.event={id:game.sequence,type:'roll',playerId,die,noMoves:moves.length===0};
-  if(!moves.length) { addLog(game,`${p.name} không có nước đi hợp lệ.`, 'blocked'); endTurn(game,die); }
+  game.event={id:game.sequence,type:'roll',playerId,die:game.dice,bonus,noMoves:moves.length===0};
+  if(!moves.length) { addLog(game,`${p.name} không có nước đi hợp lệ.`, 'blocked'); endTurn(game,game.dice); }
   return game;
 }
 export function movePiece(game,playerId,piece) {
   if(game.status!=='playing'||game.phase!=='move'||game.players[game.current].id!==playerId) throw new Error('Chưa đến lượt đi của bạn.');
   const move=getMove(game,playerId,piece);
   if(!move) throw new Error('Quân này không có nước đi hợp lệ.');
-  const p=game.players[game.current], die=game.dice;
+  const p=game.players[game.current], dice=game.dice;
   if(move.capture) game.players.find(q=>q.id===move.capture.playerId).pieces[move.capture.piece]=-1;
   p.pieces[piece]=move.to;
-  const label=move.kind==='enter'?'xuất quân':move.to>=56?`vào chuồng ${move.to-55}`:move.capture?'đá ngựa đối phương':`đi ${die} ô`;
+  const distLabel=Array.isArray(dice)?(move.kind==='home'?`vào bậc ${move.to-55}`:`đi ${move.steps||diceSum(dice)} ô`):`đi ${dice} ô`;
+  const label=move.kind==='enter'?'xuất quân':move.to>=56?`vào chuồng ${move.to-55}`:move.capture?'đá ngựa đối phương':distLabel;
   addLog(game,`${p.name}: ngựa ${piece+1} ${label}.`,move.kind);
-  game.event={...move,id:game.sequence,type:'move',die};
+  game.event={...move,id:game.sequence,type:'move',die:dice};
   if(settledCount(p)===4) { game.status='finished'; game.phase='finished'; game.winner=p.id; addLog(game,`${p.name} chiến thắng!`,'win'); }
-  else game.event.bonus=endTurn(game,die);
+  else game.event.bonus=endTurn(game,dice);
   return game;
 }
 export function forfeit(game,playerId) {

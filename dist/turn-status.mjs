@@ -16,7 +16,7 @@ export function getTurnStatus({mode,game,room,playerId,connected=true,busy=false
   else if(animating&&actor){title=game.event?.type==='roll'?`${actor.name} đang gieo xúc xắc`:`${actor.name} đang đi ngựa`;detail=`Quân ${color.name.toLowerCase()} · Chờ ngựa đi xong`;}
   else if(playing){
     title=mode==='local'?`Đến lượt ${current.name}`:mine?'ĐẾN LƯỢT BẠN!':`Đang chờ ${current.name}`;
-    detail=mine?(game.phase==='move'?`Xúc xắc ${game.dice} · Chạm ngựa ${color.name.toLowerCase()} có vòng sáng`:`Quân ${color.name.toLowerCase()} · Gieo xúc xắc để bắt đầu`):`Quân ${color.name.toLowerCase()} đang ${game.phase==='move'?'chọn ngựa':'gieo xúc xắc'}`;
+    detail=mine?(game.phase==='move'?`Xúc xắc ${Array.isArray(game.dice)?`[${game.dice[0]}, ${game.dice[1]}] (Tổng ${game.dice[0]+game.dice[1]})`:game.dice} · Chạm ngựa ${color.name.toLowerCase()} có vòng sáng`:`Quân ${color.name.toLowerCase()} · Gieo xúc xắc để bắt đầu`):`Quân ${color.name.toLowerCase()} đang ${game.phase==='move'?'chọn ngựa':'gieo xúc xắc'}`;
     if(mine)tone='yours';
   }else if(me){title=`Bạn cầm quân ${COLORS[me.color].name.toLowerCase()}`;detail=room?.hostId===me.id?'Chờ mọi người sẵn sàng rồi bắt đầu.':'Bấm sẵn sàng để chủ phòng bắt đầu.';}
   return {me,current,actor,mine,ready,color,title,detail,tone,visible:!!game||!!room,

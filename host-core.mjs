@@ -19,7 +19,7 @@ export function getLanUrls(port,inspect=networkInterfaces) {
       .map(address=>`http://${address.address}:${port}`)))];
   } catch { return []; }
 }
-export function createApp({dice=()=>randomInt(1,7),now=()=>Date.now(),assets=null,storeFile=null,trustProxy=false,allowedOrigins=[]}={}) {
+export function createApp({dice=()=>[randomInt(1,7),randomInt(1,7)],now=()=>Date.now(),assets=null,storeFile=null,trustProxy=false,allowedOrigins=[]}={}) {
   const allowed=new Set(allowedOrigins.map(normalizeHostOrigin).filter(Boolean));
   const store=createRoomStore(storeFile,now),rooms=new Map(),limits=new Map();
   const persist=()=>store?.write(rooms);
